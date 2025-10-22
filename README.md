@@ -5,9 +5,7 @@ It's an app which simulatttions a camera based verifcation process.
 # Current state
 I started working on this on 2025/10/22, so please give me a week.  
 Have a little preview <3
-https://github.com/user-attachments/assets/86bbf86e-bd77-4292-a126-a57eefe06c94
-
-
+![idkman](https://github.com/user-attachments/assets/86bbf86e-bd77-4292-a126-a57eefe06c94)
 
 # Planned features
 - Face detection
