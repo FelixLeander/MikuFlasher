@@ -1,6 +1,6 @@
 # MikuFlasher
 ## What is this?
-It's an app which simulatttions a camera based verifcation process. 
+It's an app which simulates a camera based verifcation process. 
 
 # Current state
 I started working on this on 2025/10/22, so please give me a week.  
