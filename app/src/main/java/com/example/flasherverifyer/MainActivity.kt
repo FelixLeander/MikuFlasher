@@ -1,4 +1,5 @@
 package com.example.flasherverifyer
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -9,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,11 +35,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.example.flasherverifyer.ui.theme.FlasherVerifyerTheme
 
 
@@ -47,14 +49,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!hasRequiredPermissions())
-            requestPermissions(CAMERAX_PERMISSIONS, 0)
+        if (!hasRequiredPermissions()) requestPermissions(CAMERAX_PERMISSIONS, 0)
 
         enableEdgeToEdge()
         setContent {
             FlasherVerifyerTheme {
-                MyPreview()
-//                AppPreview(context = applicationContext)
+                AppPreview(context = applicationContext)
             }
         }
     }
@@ -62,8 +62,7 @@ class MainActivity : ComponentActivity() {
     private fun hasRequiredPermissions(): Boolean {
         return CAMERAX_PERMISSIONS.all {
             ContextCompat.checkSelfPermission(
-                applicationContext,
-                it
+                applicationContext, it
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
@@ -77,25 +76,25 @@ class MainActivity : ComponentActivity() {
     @Preview(showBackground = true)
     @Composable
     fun AppPreview(modifier: Modifier = Modifier, context: Context = LocalContext.current) {
-        val controller =
-            if (LocalInspectionMode.current) {
-                null
-            } else {
-                remember {
-                    LifecycleCameraController(context).apply {
-                        setEnabledUseCases(
-                            CameraController.IMAGE_CAPTURE
-                                    and CameraController.VIDEO_CAPTURE
-                                    and CameraController.IMAGE_ANALYSIS
-                        )
-                    }
+        val controller = if (LocalInspectionMode.current) {
+            null
+        } else {
+            remember {
+                LifecycleCameraController(context).apply {
+                    setEnabledUseCases(
+                        CameraController.IMAGE_CAPTURE and CameraController.VIDEO_CAPTURE and CameraController.IMAGE_ANALYSIS
+                    )
                 }
             }
+        }
 
         Box(modifier = modifier.fillMaxSize()) {
             CameraFeed(
-                modifier = modifier.fillMaxSize(),
-                controller = controller
+                modifier = modifier.fillMaxSize(), controller = controller
+            )
+
+            CameraSwitchButton(
+                modifier = modifier, controller = controller
             )
 
 //            MikuFaceOverlay(Modifier.background(Color.Red))
@@ -103,12 +102,12 @@ class MainActivity : ComponentActivity() {
 //                listOf(R.drawable.face_shape, R.drawable.extremities_shape, R.drawable.face_shape_miku),
 //                Modifier.fillMaxSize())
 
-            SwipeBetweenScreens(Modifier)
+//            SwipeBetweenScreens(Modifier.fillMaxSize())
+            val drawable = ResourcesCompat.getDrawable(LocalResources.current, R.drawable.extremities, null)
+            if (drawable == null)
+                error("Resource is missing!")
 
-            CameraSwitchButton(
-                modifier = modifier,
-                controller = controller
-            )
+
 
             Column(
                 modifier = modifier.align(Alignment.BottomCenter),
@@ -117,14 +116,15 @@ class MainActivity : ComponentActivity() {
             ) {
                 BottomStatus(modifier = modifier)
 
-                IconButton(modifier = Modifier
-                    .fillMaxHeight(0.1f)
-                    .fillMaxWidth(),onClick = {
+                IconButton(
+                    modifier = Modifier
+                        .fillMaxHeight(0.1f)
+                        .fillMaxWidth(), onClick = {
 
-                }) {
-                    Icon(Icons.Outlined.Camera,
-                        "Take a picture",
-                        Modifier.fillMaxSize())
+                    }) {
+                    Icon(
+                        Icons.Outlined.Camera, "Take a picture", Modifier.fillMaxSize()
+                    )
                 }
             }
         }
@@ -133,24 +133,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun CameraSwitchButton(
-    modifier: Modifier = Modifier,
-    controller: LifecycleCameraController? = null
+    modifier: Modifier = Modifier, controller: LifecycleCameraController? = null
 ) {
     IconButton(
         onClick = {
             controller?.cameraSelector =
-                if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA)
-                    CameraSelector.DEFAULT_FRONT_CAMERA
-                else
-                    CameraSelector.DEFAULT_BACK_CAMERA
-        },
-        modifier = modifier
+                if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) CameraSelector.DEFAULT_FRONT_CAMERA
+                else CameraSelector.DEFAULT_BACK_CAMERA
+        }, modifier = modifier
             .offset(32.dp, 32.dp)
             .scale(2.5f)
     ) {
         Icon(
-            imageVector = Icons.Outlined.Cameraswitch,
-            contentDescription = "Switch camera"
+            imageVector = Icons.Outlined.Cameraswitch, contentDescription = "Switch camera"
         )
     }
 }
@@ -160,32 +155,32 @@ fun CameraSwitchButton(
 fun BottomStatus(
     modifier: Modifier = Modifier
 ) {
-        Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Verified",
-                modifier = Modifier,
-                color = Color.White,
-                fontSize = 40.sp,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.width(16.dp))
-            Icon(
-                imageVector = Icons.Outlined.CheckCircle,
-                contentDescription = "CheckCircle",
-                modifier = Modifier.scale(2f),
-                tint = Color.Green
-            )
-        }
-
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
         Text(
-            text = "Thank you for your compliance!",
-            modifier = Modifier.fillMaxWidth(),
+            text = "Verified",
+            modifier = Modifier,
             color = Color.White,
-            fontSize = 25.sp,
+            fontSize = 40.sp,
             textAlign = TextAlign.Center
         )
+        Spacer(Modifier.width(16.dp))
+        Icon(
+            imageVector = Icons.Outlined.CheckCircle,
+            contentDescription = "CheckCircle",
+            modifier = Modifier.scale(2f),
+            tint = Color.Green
+        )
+    }
+
+    Text(
+        text = "Thank you for your compliance!",
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White,
+        fontSize = 25.sp,
+        textAlign = TextAlign.Center
+    )
 }
