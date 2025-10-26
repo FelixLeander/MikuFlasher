@@ -9,16 +9,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Camera
 import androidx.compose.material.icons.outlined.Cameraswitch
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Icon
@@ -50,7 +53,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FlasherVerifyerTheme {
-                AppPreview(context = applicationContext)
+                MyPreview()
+//                AppPreview(context = applicationContext)
             }
         }
     }
@@ -94,14 +98,35 @@ class MainActivity : ComponentActivity() {
                 controller = controller
             )
 
-            FocusedVectorWithDarkAround()
+//            MikuFaceOverlay(Modifier.background(Color.Red))
+//            SwipeToSwitchDrawables(
+//                listOf(R.drawable.face_shape, R.drawable.extremities_shape, R.drawable.face_shape_miku),
+//                Modifier.fillMaxSize())
+
+            SwipeBetweenScreens(Modifier)
 
             CameraSwitchButton(
                 modifier = modifier,
                 controller = controller
             )
 
-            StatusRow(modifier = modifier.align(Alignment.BottomCenter))
+            Column(
+                modifier = modifier.align(Alignment.BottomCenter),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                BottomStatus(modifier = modifier)
+
+                IconButton(modifier = Modifier
+                    .fillMaxHeight(0.1f)
+                    .fillMaxWidth(),onClick = {
+
+                }) {
+                    Icon(Icons.Outlined.Camera,
+                        "Take a picture",
+                        Modifier.fillMaxSize())
+                }
+            }
         }
     }
 }
@@ -121,7 +146,7 @@ fun CameraSwitchButton(
         },
         modifier = modifier
             .offset(32.dp, 32.dp)
-            .scale(2f)
+            .scale(2.5f)
     ) {
         Icon(
             imageVector = Icons.Outlined.Cameraswitch,
@@ -132,14 +157,11 @@ fun CameraSwitchButton(
 
 @Preview
 @Composable
-fun StatusRow(
+fun BottomStatus(
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
         Row(
+            modifier = modifier,
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -163,7 +185,7 @@ fun StatusRow(
             text = "Thank you for your compliance!",
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
+            fontSize = 25.sp,
             textAlign = TextAlign.Center
         )
-    }
 }
