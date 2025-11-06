@@ -2,7 +2,7 @@ package com.example.flasherverifyer
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,42 +36,25 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.core.content.res.ResourcesCompat
 import com.example.flasherverifyer.ui.theme.FlasherVerifyerTheme
-
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (!hasRequiredPermissions()) requestPermissions(CAMERAX_PERMISSIONS, 0)
 
         enableEdgeToEdge()
         setContent {
             FlasherVerifyerTheme {
+                RequestPermissionWithRationale(Manifest.permission.CAMERA, "Camera")
                 AppPreview(context = applicationContext)
             }
         }
-    }
-
-    private fun hasRequiredPermissions(): Boolean {
-        return CAMERAX_PERMISSIONS.all {
-            ContextCompat.checkSelfPermission(
-                applicationContext, it
-            ) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    companion object {
-        private val CAMERAX_PERMISSIONS = arrayOf(
-            Manifest.permission.CAMERA
-        )
     }
 
     @Preview(showBackground = true)
@@ -82,7 +66,7 @@ class MainActivity : ComponentActivity() {
             remember {
                 LifecycleCameraController(context).apply {
                     setEnabledUseCases(
-                        CameraController.IMAGE_CAPTURE and CameraController.VIDEO_CAPTURE and CameraController.IMAGE_ANALYSIS
+                        CameraController.IMAGE_CAPTURE
                     )
                 }
             }
@@ -93,21 +77,11 @@ class MainActivity : ComponentActivity() {
                 modifier = modifier.fillMaxSize(), controller = controller
             )
 
+            SwipeBetweenScreens(Modifier.fillMaxSize())
+
             CameraSwitchButton(
                 modifier = modifier, controller = controller
             )
-
-//            MikuFaceOverlay(Modifier.background(Color.Red))
-//            SwipeToSwitchDrawables(
-//                listOf(R.drawable.face_shape, R.drawable.extremities_shape, R.drawable.face_shape_miku),
-//                Modifier.fillMaxSize())
-
-//            SwipeBetweenScreens(Modifier.fillMaxSize())
-            val drawable = ResourcesCompat.getDrawable(LocalResources.current, R.drawable.extremities, null)
-            if (drawable == null)
-                error("Resource is missing!")
-
-
 
             Column(
                 modifier = modifier.align(Alignment.BottomCenter),
@@ -116,15 +90,24 @@ class MainActivity : ComponentActivity() {
             ) {
                 BottomStatus(modifier = modifier)
 
+                val dialogBitmap = remember { mutableStateOf<Bitmap?>(null) }
                 IconButton(
                     modifier = Modifier
                         .fillMaxHeight(0.1f)
                         .fillMaxWidth(), onClick = {
-
+                        if (controller != null)
+                            takePhoto(context, controller, onPhotoTaken = { bitmap ->
+                                dialogBitmap.value = bitmap
+                            })
                     }) {
                     Icon(
-                        Icons.Outlined.Camera, "Take a picture", Modifier.fillMaxSize()
+                        Icons.Outlined.Camera, "Take picture", Modifier.fillMaxSize()
                     )
+                }
+                dialogBitmap.value?.let {
+                    ImageDialog(it, onDismiss = {
+                        dialogBitmap.value = null
+                    })
                 }
             }
         }
