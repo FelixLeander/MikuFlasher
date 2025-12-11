@@ -13,5 +13,8 @@ by [@SinTryBest](https://x.com/SinTryBest/status/1980428006868041836/photo/1)
 <img src="https://github.com/user-attachments/assets/c6fea5b1-5531-466f-8b9c-a267fc3d219c" alt="twittter profile picture" width="100"/>
 
 ## Current state
-A camera app with different overlays.
-I am pausing this until... I feel like it.
+- Useses the camera feed.
+- Can take and show a picture (but not safe it). 
+- Has multiple overlays (chanage by swiping) 
+
+I am pausing this until... someones asks me to continue or i feel like it. 
