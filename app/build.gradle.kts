@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("de.undercouch.download")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
