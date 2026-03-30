@@ -58,8 +58,4 @@ class MainViewModel : ViewModel() {
     fun setMinPosePresenceConfidence(confidence: Float) {
         _minPosePresenceConfidence = confidence
     }
-
-    fun setModel(model: Int) {
-        _model = model
-    }
 }

@@ -76,10 +76,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
 
                 PoseLandmarker.POSE_LANDMARKS.forEach {
                     canvas.drawLine(
-                        poseLandmarkerResult.landmarks().get(0).get(it!!.start()).x() * imageWidth * scaleFactor,
-                        poseLandmarkerResult.landmarks().get(0).get(it.start()).y() * imageHeight * scaleFactor,
-                        poseLandmarkerResult.landmarks().get(0).get(it.end()).x() * imageWidth * scaleFactor,
-                        poseLandmarkerResult.landmarks().get(0).get(it.end()).y() * imageHeight * scaleFactor,
+                        poseLandmarkerResult.landmarks()[0][it!!.start()].x() * imageWidth * scaleFactor,
+                        poseLandmarkerResult.landmarks()[0][it.start()].y() * imageHeight * scaleFactor,
+                        poseLandmarkerResult.landmarks()[0][it.end()].x() * imageWidth * scaleFactor,
+                        poseLandmarkerResult.landmarks()[0][it.end()].y() * imageHeight * scaleFactor,
                         linePaint)
                 }
             }

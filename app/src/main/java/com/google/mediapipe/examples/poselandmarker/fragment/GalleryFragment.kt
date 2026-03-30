@@ -1,27 +1,10 @@
-/*
- * Copyright 2023 The TensorFlow Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.google.mediapipe.examples.poselandmarker.fragment
 
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -39,6 +22,7 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import androidx.core.view.isGone
 
 class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
 
@@ -253,18 +237,11 @@ class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
         setUiEnabled(false)
         backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
         updateDisplayView(MediaType.IMAGE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val source = ImageDecoder.createSource(
-                requireActivity().contentResolver,
-                uri
-            )
-            ImageDecoder.decodeBitmap(source)
-        } else {
-            MediaStore.Images.Media.getBitmap(
-                requireActivity().contentResolver,
-                uri
-            )
-        }
+        val source = ImageDecoder.createSource(
+            requireActivity().contentResolver,
+            uri
+        )
+        ImageDecoder.decodeBitmap(source)
             .copy(Bitmap.Config.ARGB_8888, true)
             ?.let { bitmap ->
                 fragmentGalleryBinding.imageResult.setImageBitmap(bitmap)
@@ -293,7 +270,7 @@ class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
 
                             setUiEnabled(true)
                             fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                                String.format("%d ms", result.inferenceTime)
+                                String.format(Locale.ROOT,"%d ms", result.inferenceTime)
                         }
                     } ?: run { Log.e(TAG, "Error running pose landmarker.") }
 
@@ -350,7 +327,7 @@ class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
         fragmentGalleryBinding.videoView.start()
         val videoStartTimeMs = SystemClock.uptimeMillis()
 
-        backgroundExecutor.scheduleAtFixedRate(
+        backgroundExecutor.scheduleWithFixedDelay(
             {
                 activity?.runOnUiThread {
                     val videoElapsedTimeMs =
@@ -358,7 +335,7 @@ class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
                     val resultIndex =
                         videoElapsedTimeMs.div(VIDEO_INTERVAL_MS).toInt()
 
-                    if (resultIndex >= result.results.size || fragmentGalleryBinding.videoView.visibility == View.GONE) {
+                    if (resultIndex >= result.results.size || fragmentGalleryBinding.videoView.isGone) {
                         // The video playback has finished so we stop drawing bounding boxes
                         backgroundExecutor.shutdown()
                     } else {
@@ -372,7 +349,7 @@ class GalleryFragment : Fragment(), PoseLandmarkerHelper.LandmarkerListener {
                         setUiEnabled(true)
 
                         fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                            String.format("%d ms", result.inferenceTime)
+                            String.format(Locale.ROOT,"%d ms", result.inferenceTime)
                     }
                 }
             },
