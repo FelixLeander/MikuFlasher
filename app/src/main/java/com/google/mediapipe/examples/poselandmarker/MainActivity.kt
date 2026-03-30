@@ -24,34 +24,37 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.core.content.ContextCompat.getMainExecutor
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.mediapipe.examples.poselandmarker.PoseLandmarkerHelper
-import com.google.mediapipe.examples.poselandmarker.OverlayView
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.tooling.preview.Preview as ComposePreview
 
 class MainActivity : ComponentActivity() {
     private var hasCameraPermission by mutableStateOf(false)
@@ -82,8 +85,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ComposePreview
 @Composable
-fun MediaPipePoseLandmarkerApp(hasCameraPermission: Boolean) {
+fun MediaPipePoseLandmarkerApp(hasCameraPermission: Boolean = true) {
     MaterialTheme {
         Surface(color = MaterialTheme.colors.background) {
             if (hasCameraPermission) {
@@ -104,6 +108,7 @@ fun MediaPipePoseLandmarkerApp(hasCameraPermission: Boolean) {
     }
 }
 
+@ComposePreview
 @Composable
 fun CameraLandmarkerScreen() {
     val context = LocalContext.current
@@ -179,13 +184,17 @@ fun CameraLandmarkerScreen() {
                 .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                 .build()
 
+            val resolutionSelector = ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                .build()
+
             val preview = Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setResolutionSelector(resolutionSelector)
                 .setTargetRotation(previewView.display.rotation)
                 .build()
 
             val imageAnalyzer = ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setResolutionSelector(resolutionSelector)
                 .setTargetRotation(previewView.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -207,7 +216,7 @@ fun CameraLandmarkerScreen() {
                     preview,
                     imageAnalyzer
                 )
-                preview.setSurfaceProvider(previewView.surfaceProvider)
+                preview.surfaceProvider = previewView.surfaceProvider
             } catch (exc: Exception) {
                 errorMessage.value = "Camera bind failed: ${exc.message}"
             }
