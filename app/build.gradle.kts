@@ -51,12 +51,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.fragment:fragment-ktx:1.8.9")
-
-    // Navigation library
-    val navVersion = "2.9.7"
-    implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
-    implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
     // CameraX core library
     val cameraxVersion = "1.6.0"
