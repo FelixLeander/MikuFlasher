@@ -76,8 +76,6 @@ fun MediaPipePoseLandmarkerApp(
     viewModel: MainViewModel,
     cameraController: CameraController
 ) {
-    val context = LocalContext.current
-
     MaterialTheme {
         Surface(color = MaterialTheme.colors.background) {
             when {
