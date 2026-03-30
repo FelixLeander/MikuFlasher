@@ -85,3 +85,8 @@ dependencies {
     // MediaPipe Library
     implementation("com.google.mediapipe:tasks-vision:0.20230731")
 }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
