@@ -6,9 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.verified.app.camera.CameraManager
 import com.verified.app.ml.FaceAnalyzer
@@ -16,7 +14,6 @@ import com.verified.app.ui.components.FaceOverlay
 import com.verified.app.viewmodel.DetectionState
 import com.verified.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun FaceScanScreen(
@@ -24,7 +21,7 @@ fun FaceScanScreen(
     onVerified: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
 
     // Hold the CameraManager in a remembered object tied to this composable's lifetime
@@ -47,11 +44,11 @@ fun FaceScanScreen(
     // When face is DETECTED, hold briefly then mark VERIFIED
     LaunchedEffect(uiState.detectionState) {
         if (uiState.detectionState == DetectionState.DETECTED) {
-            delay(800.milliseconds)
+            delay(800)
             viewModel.onFaceVerified()
         }
         if (uiState.detectionState == DetectionState.VERIFIED) {
-            delay(1800.milliseconds)
+            delay(1800)
             cameraManager.shutdown()
             onVerified()
         }

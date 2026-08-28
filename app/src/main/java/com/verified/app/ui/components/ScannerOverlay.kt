@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -11,7 +12,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,12 +22,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.verified.app.R
+import com.verified.app.ml.PoseDetectionResult
 import com.verified.app.viewmodel.DetectionState
-import androidx.compose.foundation.Image
 
-/**
- * Face scan overlay: frosted stencil cutout of the face shape + status text.
- */
 @Composable
 fun FaceOverlay(
     detectionState: DetectionState,
@@ -39,7 +36,6 @@ fun FaceOverlay(
             stencil = R.drawable.face_shape_fill,
             draw = R.drawable.face_shape,
         )
-
         ScanStatus(
             detectionState = detectionState,
             scanningLabel = "Scanning face…",
@@ -48,23 +44,25 @@ fun FaceOverlay(
     }
 }
 
-/**
- * Chest scan overlay: frosted stencil cutout of the torso shape,
- * with extremities drawn on top, + permanent stage label + status text.
- */
 @Composable
 fun ChestOverlay(
     detectionState: DetectionState,
+    poseResult: PoseDetectionResult?,
+    showLiveSkeleton: Boolean,
+    showGhostSkeleton: Boolean,
+    onToggleLive: () -> Unit,
+    onToggleGhost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
+        // Frosted stencil
         BackgroundStencil(
             modifier = Modifier.fillMaxSize(),
             stencil = R.drawable.torso_shape_fill,
             draw = R.drawable.torso_shape,
         )
 
-        // Extremities bitmap scaled to fill width, matching stencil
+        // Extremities bitmap — fill width, centred vertically
         Image(
             painter = painterResource(R.drawable.extremities),
             contentDescription = null,
@@ -75,14 +73,29 @@ fun ChestOverlay(
                 .align(Alignment.Center),
         )
 
-        // Stage label + scan status always at the bottom
+        // Skeleton overlays (sit above stencil, below UI chrome)
+        SkeletonOverlay(
+            poseResult = poseResult,
+            showLive = showLiveSkeleton,
+            showGhost = showGhostSkeleton,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Bottom chrome: toggles → stage label → scan status
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 48.dp, start = 24.dp, end = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            SkeletonToggleRow(
+                showLive = showLiveSkeleton,
+                showGhost = showGhostSkeleton,
+                onToggleLive = onToggleLive,
+                onToggleGhost = onToggleGhost,
+            )
+
             Text(
                 text = "One more step.",
                 color = Color.White,
@@ -90,7 +103,7 @@ fun ChestOverlay(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
+
             ScanStatusContent(
                 detectionState = detectionState,
                 scanningLabel = "Scanning…",
@@ -99,7 +112,7 @@ fun ChestOverlay(
     }
 }
 
-// ── Shared status content ─────────────────────────────────────────────────────
+// ── Shared status helpers ─────────────────────────────────────────────────────
 
 @Composable
 private fun ScanStatus(
@@ -117,7 +130,7 @@ private fun ScanStatus(
 }
 
 @Composable
-private fun ScanStatusContent(
+fun ScanStatusContent(
     detectionState: DetectionState,
     scanningLabel: String,
 ) {
