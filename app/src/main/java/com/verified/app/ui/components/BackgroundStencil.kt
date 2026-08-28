@@ -34,8 +34,6 @@ fun BackgroundStencil(
     modifier: Modifier = Modifier,
     @DrawableRes stencil: Int,
     @DrawableRes draw: Int,
-    scaleWidth: Float,
-    scaleHeight: Float,
 ) {
     val context = LocalContext.current
 
@@ -51,10 +49,10 @@ fun BackgroundStencil(
         nativeCanvas.drawRect(fullRectF, paint)
 
         // Cut out the body part shape (makes it transparent)
-        nativeCanvas.drawDrawable(context, size, stencil, scaleWidth, scaleHeight, paint, PorterDuff.Mode.DST_OUT)
+        nativeCanvas.drawDrawable(context, size, stencil, paint, PorterDuff.Mode.DST_OUT)
 
         // Draw the outline behind the camera feed
-        nativeCanvas.drawDrawable(context, size, draw, scaleWidth, scaleHeight, paint, PorterDuff.Mode.DST_OVER)
+        nativeCanvas.drawDrawable(context, size, draw, paint, PorterDuff.Mode.DST_OVER)
 
         paint.xfermode = null
         nativeCanvas.restoreToCount(layer)
@@ -67,18 +65,18 @@ private fun NativeCanvas.drawDrawable(
     context: Context,
     parentSize: Size,
     @DrawableRes drawableRes: Int,
-    scaleWidth: Float,
-    scaleHeight: Float,
     paint: Paint,
     mode: PorterDuff.Mode,
 ) {
-    var bitmap = vectorToBitmap(context, drawableRes)
-    bitmap = bitmap.scale(
-        (bitmap.width * scaleWidth).toInt(),
-        (bitmap.height * scaleHeight).toInt(),
+    val bitmap = vectorToBitmap(context, drawableRes)
+    // Scale to fill the full available width, preserving aspect ratio
+    val scale = parentSize.width / bitmap.width.toFloat()
+    val scaled = bitmap.scale(
+        parentSize.width.toInt(),
+        (bitmap.height * scale).toInt(),
     )
     paint.xfermode = PorterDuffXfermode(mode)
-    drawBitmapCentered(bitmap, parentSize.width / 2f, parentSize.height / 2f, paint)
+    drawBitmapCentered(scaled, parentSize.width / 2f, parentSize.height / 2f, paint)
 }
 
 private fun vectorToBitmap(context: Context, @DrawableRes id: Int): Bitmap {
