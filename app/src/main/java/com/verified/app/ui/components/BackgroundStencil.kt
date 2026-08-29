@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import androidx.annotation.DrawableRes
@@ -34,6 +35,7 @@ fun BackgroundStencil(
     modifier: Modifier = Modifier,
     @DrawableRes stencil: Int,
     @DrawableRes draw: Int,
+    drawTint: Color = Color.Unspecified,
 ) {
     val context = LocalContext.current
 
@@ -48,13 +50,18 @@ fun BackgroundStencil(
         paint.color = Color(1f, 1f, 1f, 0.6f).toArgb()
         nativeCanvas.drawRect(fullRectF, paint)
 
-        // Cut out the body part shape (makes it transparent)
+        // Cut out the body part shape — no tint
+        paint.colorFilter = null
         nativeCanvas.drawDrawable(context, size, stencil, paint, PorterDuff.Mode.DST_OUT)
 
-        // Draw the outline behind the camera feed
+        // Draw outline — apply tint if provided
+        paint.colorFilter = if (drawTint != Color.Unspecified)
+            PorterDuffColorFilter(drawTint.toArgb(), PorterDuff.Mode.SRC_IN)
+        else null
         nativeCanvas.drawDrawable(context, size, draw, paint, PorterDuff.Mode.DST_OVER)
 
         paint.xfermode = null
+        paint.colorFilter = null
         nativeCanvas.restoreToCount(layer)
     }
 }

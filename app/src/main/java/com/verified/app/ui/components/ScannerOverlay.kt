@@ -64,11 +64,20 @@ fun ChestOverlay(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
+        // Derive outline tint from NudeNet breast detection state
+        val outlineTint = when (nudeNetResult?.breastState) {
+            BreastState.COVERED  -> Color(0xFF44DD44)   // green
+            BreastState.EXPOSED  -> Color(0xFFFF4444)   // red
+            BreastState.BOTH     -> Color(0xFFFFD43B)   // amber
+            else                 -> Color.Unspecified   // original drawable colour
+        }
+
         // Frosted stencil
         BackgroundStencil(
             modifier = Modifier.fillMaxSize(),
             stencil = R.drawable.torso_shape_fill,
             draw = R.drawable.torso_shape,
+            drawTint = outlineTint,
         )
 
         // Extremities bitmap — fill width, centred

@@ -1,9 +1,14 @@
 package com.verified.app.ui.components
 
+import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,17 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.graphics.Paint as NativePaint
-import android.graphics.Rect as NativeRect
-import android.graphics.Typeface
-import androidx.compose.ui.graphics.nativeCanvas
 import com.google.mlkit.vision.pose.PoseLandmark
 import com.verified.app.ml.NudeNetResult
 import com.verified.app.ml.PoseDetectionResult
+import android.graphics.Paint as NativePaint
+import android.graphics.Rect as NativeRect
 
 // ── Connections to draw (pairs of PoseLandmark constants) ────────────────────
 
