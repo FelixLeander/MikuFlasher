@@ -12,11 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.mlkit.vision.pose.Pose
+import android.graphics.Paint as NativePaint
+import android.graphics.Rect as NativeRect
+import android.graphics.Typeface
 import com.google.mlkit.vision.pose.PoseLandmark
+import com.verified.app.ml.NudeDetection
+import com.verified.app.ml.NudeNetResult
 import com.verified.app.ml.PoseDetectionResult
 
 // ── Connections to draw (pairs of PoseLandmark constants) ────────────────────
@@ -77,23 +82,25 @@ fun SkeletonOverlay(
 }
 
 /**
- * Two horizontally-arranged pill toggle buttons.
- * Place these wherever suits the layout.
+ * Three horizontally-arranged pill toggle buttons.
  */
 @Composable
 fun SkeletonToggleRow(
     showLive: Boolean,
     showGhost: Boolean,
+    showNudeNet: Boolean,
     onToggleLive: () -> Unit,
     onToggleGhost: () -> Unit,
+    onToggleNudeNet: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TogglePill(label = "Live", active = showLive, onClick = onToggleLive)
-        TogglePill(label = "Guide", active = showGhost, onClick = onToggleGhost)
+        TogglePill(label = "Live",    active = showLive,    onClick = onToggleLive)
+        TogglePill(label = "Guide",   active = showGhost,   onClick = onToggleGhost)
+        TogglePill(label = "Classes", active = showNudeNet, onClick = onToggleNudeNet)
     }
 }
 
@@ -191,4 +198,103 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawLiveSkeleton(
         val dotColor = if (lm.inFrameLikelihood > 0.7f) highConf else lowConf
         drawCircle(dotColor, dotRadius, p)
     }
+}
+
+// ── NudeNet bounding-box overlay ─────────────────────────────────────────────
+
+/**
+ * Draws a labelled bounding box for every detection in [nudeNetResult].
+ * Coordinates are mapped directly from the model's normalised [0,1] output
+ * to canvas dimensions — works well for content near the centre of frame.
+ */
+@Composable
+fun NudeNetBoxOverlay(
+    nudeNetResult: NudeNetResult?,
+    modifier: Modifier = Modifier,
+) {
+    if (nudeNetResult == null || nudeNetResult.detections.isEmpty()) return
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val nativeCanvas = drawContext.canvas.nativeCanvas
+        val labelTextSize = 11.sp.toPx()
+        val strokePx = 2.dp.toPx()
+        val padPx = 4.dp.toPx()
+
+        for (det in nudeNetResult.detections) {
+            val color = nudeNetClassColor(det.classIndex)
+            val argb = color.toArgb()
+
+            val x1 = det.x1 * size.width
+            val y1 = det.y1 * size.height
+            val x2 = det.x2 * size.width
+            val y2 = det.y2 * size.height
+
+            // Semi-transparent fill
+            nativeCanvas.drawRect(
+                x1, y1, x2, y2,
+                NativePaint().apply {
+                    this.color = color.copy(alpha = 0.15f).toArgb()
+                    style = NativePaint.Style.FILL
+                }
+            )
+
+            // Box outline
+            nativeCanvas.drawRect(
+                x1, y1, x2, y2,
+                NativePaint().apply {
+                    this.color = argb
+                    style = NativePaint.Style.STROKE
+                    strokeWidth = strokePx
+                    isAntiAlias = true
+                }
+            )
+
+            // Label: class name + confidence %
+            val label = "${det.className}  ${(det.confidence * 100).toInt()}%"
+            val textPaint = NativePaint().apply {
+                this.color = android.graphics.Color.WHITE
+                textSize = labelTextSize
+                isAntiAlias = true
+                typeface = Typeface.MONOSPACE
+            }
+            val bounds = NativeRect()
+            textPaint.getTextBounds(label, 0, label.length, bounds)
+
+            val labelW = bounds.width() + padPx * 2
+            val labelH = bounds.height() + padPx * 2
+            // Clamp label above the box; if too close to top, draw inside instead
+            val labelTop = if (y1 - labelH >= 0) y1 - labelH else y1
+
+            nativeCanvas.drawRect(
+                x1, labelTop, x1 + labelW, labelTop + labelH,
+                NativePaint().apply { this.color = color.copy(alpha = 0.85f).toArgb() }
+            )
+            nativeCanvas.drawText(
+                label,
+                x1 + padPx,
+                labelTop + labelH - padPx,
+                textPaint,
+            )
+        }
+    }
+}
+
+/** Consistent colour per class — grouped by semantic category. */
+private fun nudeNetClassColor(classIndex: Int): Color = when (classIndex) {
+    3    -> Color(0xFFFF4444)  // FEMALE_BREAST_EXPOSED   — red
+    16   -> Color(0xFF44DD44)  // FEMALE_BREAST_COVERED   — green
+    4    -> Color(0xFFFF0000)  // FEMALE_GENITALIA_EXPOSED — deep red
+    0    -> Color(0xFF00BBBB)  // FEMALE_GENITALIA_COVERED — teal
+    14   -> Color(0xFFDD2222)  // MALE_GENITALIA_EXPOSED   — dark red
+    15   -> Color(0xFF009999)  // ANUS_COVERED             — dark teal
+    6    -> Color(0xFFFF6600)  // ANUS_EXPOSED             — orange
+    2    -> Color(0xFFFF8800)  // BUTTOCKS_EXPOSED         — amber
+    17   -> Color(0xFF44AAAA)  // BUTTOCKS_COVERED         — light teal
+    5    -> Color(0xFFFF9999)  // MALE_BREAST_EXPOSED      — light red
+    1, 12 -> Color(0xFF6699FF) // FACE_FEMALE / FACE_MALE  — blue
+    13   -> Color(0xFFFFCC44)  // BELLY_EXPOSED            — yellow
+    8    -> Color(0xFFCCBB44)  // BELLY_COVERED            — dark yellow
+    7, 9 -> Color(0xFFAAFFAA)  // FEET_EXPOSED / COVERED   — light green
+    10,11 -> Color(0xFFCCCCFF) // ARMPITS                  — lavender
+    else -> Color(0xFFCCCCCC)  // fallback                 — light grey
 }

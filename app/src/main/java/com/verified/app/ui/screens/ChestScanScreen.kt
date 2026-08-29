@@ -67,14 +67,16 @@ fun ChestScanScreen(
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
         ChestOverlay(
-            detectionState  = uiState.detectionState,
-            nudeNetResult   = uiState.nudeNetResult,
-            poseResult      = uiState.poseResult,
-            showLiveSkeleton = uiState.showLiveSkeleton,
+            detectionState    = uiState.detectionState,
+            nudeNetResult     = uiState.nudeNetResult,
+            poseResult        = uiState.poseResult,
+            showLiveSkeleton  = uiState.showLiveSkeleton,
             showGhostSkeleton = uiState.showGhostSkeleton,
-            onToggleLive    = viewModel::toggleLiveSkeleton,
-            onToggleGhost   = viewModel::toggleGhostSkeleton,
-            modifier        = Modifier.fillMaxSize(),
+            showNudeNetOverlay = uiState.showNudeNetOverlay,
+            onToggleLive      = viewModel::toggleLiveSkeleton,
+            onToggleGhost     = viewModel::toggleGhostSkeleton,
+            onToggleNudeNet   = viewModel::toggleNudeNetOverlay,
+            modifier          = Modifier.fillMaxSize(),
         )
     }
 }

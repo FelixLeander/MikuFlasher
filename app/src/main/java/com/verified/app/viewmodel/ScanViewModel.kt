@@ -21,6 +21,7 @@ data class ScanUiState(
     val poseResult: PoseDetectionResult? = null,
     val showLiveSkeleton: Boolean = false,
     val showGhostSkeleton: Boolean = false,
+    val showNudeNetOverlay: Boolean = false,
 )
 
 class ScanViewModel : ViewModel() {
@@ -97,6 +98,12 @@ class ScanViewModel : ViewModel() {
     fun toggleGhostSkeleton() {
         _uiState.value = _uiState.value.copy(
             showGhostSkeleton = !_uiState.value.showGhostSkeleton,
+        )
+    }
+
+    fun toggleNudeNetOverlay() {
+        _uiState.value = _uiState.value.copy(
+            showNudeNetOverlay = !_uiState.value.showNudeNetOverlay,
         )
     }
 

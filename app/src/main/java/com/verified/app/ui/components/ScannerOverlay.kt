@@ -57,8 +57,10 @@ fun ChestOverlay(
     poseResult: PoseDetectionResult?,
     showLiveSkeleton: Boolean,
     showGhostSkeleton: Boolean,
+    showNudeNetOverlay: Boolean,
     onToggleLive: () -> Unit,
     onToggleGhost: () -> Unit,
+    onToggleNudeNet: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -88,6 +90,14 @@ fun ChestOverlay(
             modifier = Modifier.fillMaxSize(),
         )
 
+        // NudeNet bounding-box overlay
+        if (showNudeNetOverlay) {
+            NudeNetBoxOverlay(
+                nudeNetResult = nudeNetResult,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
         // Bottom chrome: toggles → "One more step." → NudeNet result → scan status
         Column(
             modifier = Modifier
@@ -99,8 +109,10 @@ fun ChestOverlay(
             SkeletonToggleRow(
                 showLive = showLiveSkeleton,
                 showGhost = showGhostSkeleton,
+                showNudeNet = showNudeNetOverlay,
                 onToggleLive = onToggleLive,
                 onToggleGhost = onToggleGhost,
+                onToggleNudeNet = onToggleNudeNet,
             )
 
             Text(
