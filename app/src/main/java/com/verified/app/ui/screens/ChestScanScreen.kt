@@ -10,7 +10,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.verified.app.camera.CameraManager
-import com.verified.app.ml.PoseAnalyzer
+import com.verified.app.ml.ChestFrameAnalyzer
+import com.verified.app.ml.NudeNetAnalyzer
 import com.verified.app.ui.components.ChestOverlay
 import com.verified.app.viewmodel.DetectionState
 import com.verified.app.viewmodel.ScanViewModel
@@ -26,17 +27,25 @@ fun ChestScanScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val cameraManager = remember { CameraManager(context) }
+    val nudeNet = remember { NudeNetAnalyzer(context) }
+
     val previewView = remember {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
 
+    // Start camera with combined analyzer
     LaunchedEffect(Unit) {
-        val analyzer = PoseAnalyzer { result -> viewModel.onPoseResult(result) }
+        val analyzer = ChestFrameAnalyzer(
+            nudeNet         = nudeNet,
+            onNudeNetResult = viewModel::onNudeNetResult,
+            onPoseResult    = viewModel::onPoseResult,
+        )
         cameraManager.startCamera(lifecycleOwner, previewView, analyzer)
     }
 
+    // Verification gate — NudeNet drives DETECTED; hold briefly then VERIFIED
     LaunchedEffect(uiState.detectionState) {
         if (uiState.detectionState == DetectionState.DETECTED) {
             delay(800)
@@ -49,17 +58,23 @@ fun ChestScanScreen(
         }
     }
 
+    // Clean up TFLite interpreter when the screen leaves composition
+    DisposableEffect(Unit) {
+        onDispose { nudeNet.close() }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
         ChestOverlay(
-            detectionState = uiState.detectionState,
-            poseResult = uiState.poseResult,
+            detectionState  = uiState.detectionState,
+            nudeNetResult   = uiState.nudeNetResult,
+            poseResult      = uiState.poseResult,
             showLiveSkeleton = uiState.showLiveSkeleton,
             showGhostSkeleton = uiState.showGhostSkeleton,
-            onToggleLive = viewModel::toggleLiveSkeleton,
-            onToggleGhost = viewModel::toggleGhostSkeleton,
-            modifier = Modifier.fillMaxSize(),
+            onToggleLive    = viewModel::toggleLiveSkeleton,
+            onToggleGhost   = viewModel::toggleGhostSkeleton,
+            modifier        = Modifier.fillMaxSize(),
         )
     }
 }

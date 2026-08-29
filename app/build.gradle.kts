@@ -35,6 +35,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Prevent Gradle from compressing the model — TFLite memory-maps it directly
+    androidResources {
+        noCompress += "tflite"
+    }
 }
 
 dependencies {
@@ -60,4 +65,7 @@ dependencies {
 
     // AppCompat (needed for AppCompatResources in BackgroundStencil)
     implementation(libs.androidx.appcompat)
+
+    // TensorFlow Lite (NudeNet inference)
+    implementation(libs.tflite)
 }

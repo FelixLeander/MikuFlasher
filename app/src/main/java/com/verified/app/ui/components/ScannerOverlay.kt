@@ -22,8 +22,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.verified.app.R
+import com.verified.app.ml.BreastState
+import com.verified.app.ml.NudeNetResult
 import com.verified.app.ml.PoseDetectionResult
 import com.verified.app.viewmodel.DetectionState
+
+// ── Face overlay ──────────────────────────────────────────────────────────────
 
 @Composable
 fun FaceOverlay(
@@ -44,9 +48,12 @@ fun FaceOverlay(
     }
 }
 
+// ── Chest overlay ─────────────────────────────────────────────────────────────
+
 @Composable
 fun ChestOverlay(
     detectionState: DetectionState,
+    nudeNetResult: NudeNetResult?,
     poseResult: PoseDetectionResult?,
     showLiveSkeleton: Boolean,
     showGhostSkeleton: Boolean,
@@ -62,7 +69,7 @@ fun ChestOverlay(
             draw = R.drawable.torso_shape,
         )
 
-        // Extremities bitmap — fill width, centred vertically
+        // Extremities bitmap — fill width, centred
         Image(
             painter = painterResource(R.drawable.extremities),
             contentDescription = null,
@@ -73,7 +80,7 @@ fun ChestOverlay(
                 .align(Alignment.Center),
         )
 
-        // Skeleton overlays (sit above stencil, below UI chrome)
+        // Skeleton overlays
         SkeletonOverlay(
             poseResult = poseResult,
             showLive = showLiveSkeleton,
@@ -81,7 +88,7 @@ fun ChestOverlay(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Bottom chrome: toggles → stage label → scan status
+        // Bottom chrome: toggles → "One more step." → NudeNet result → scan status
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -104,11 +111,44 @@ fun ChestOverlay(
                 textAlign = TextAlign.Center,
             )
 
+            // NudeNet detection badge — only shown when something is detected
+            BreastDetectionBadge(nudeNetResult = nudeNetResult)
+
             ScanStatusContent(
                 detectionState = detectionState,
                 scanningLabel = "Scanning…",
             )
         }
+    }
+}
+
+// ── Breast detection badge ────────────────────────────────────────────────────
+
+@Composable
+private fun BreastDetectionBadge(nudeNetResult: NudeNetResult?) {
+    val state = nudeNetResult?.breastState ?: BreastState.NONE
+    val conf  = nudeNetResult?.breastConfidence ?: 0f
+
+    AnimatedVisibility(
+        visible = state != BreastState.NONE,
+        enter = fadeIn(),
+        exit  = fadeOut(),
+    ) {
+        val (label, color) = when (state) {
+            BreastState.EXPOSED -> "Exposed"  to Color(0xFFFF6B6B)
+            BreastState.COVERED -> "Covered"  to Color(0xFF69DB7C)
+            BreastState.BOTH    -> "Detected" to Color(0xFFFFD43B)
+            BreastState.NONE    -> ""         to Color.Transparent
+        }
+        val pct = (conf * 100).toInt()
+
+        Text(
+            text = "$label · $pct%",
+            color = color,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -154,7 +194,7 @@ fun ScanStatusContent(
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(),
-                exit = fadeOut(),
+                exit  = fadeOut(),
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
