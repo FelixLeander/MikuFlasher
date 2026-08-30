@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.verified.app.camera.CameraManager
 import com.verified.app.ml.ChestFrameAnalyzer
@@ -16,6 +16,7 @@ import com.verified.app.ui.components.ChestOverlay
 import com.verified.app.viewmodel.DetectionState
 import com.verified.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ChestScanScreen(
@@ -48,11 +49,11 @@ fun ChestScanScreen(
     // Verification gate — NudeNet drives DETECTED; hold briefly then VERIFIED
     LaunchedEffect(uiState.detectionState) {
         if (uiState.detectionState == DetectionState.DETECTED) {
-            delay(800)
+            delay(800.milliseconds)
             viewModel.onChestVerified()
         }
         if (uiState.detectionState == DetectionState.VERIFIED) {
-            delay(1800)
+            delay(1800.milliseconds)
             cameraManager.shutdown()
             onVerified()
         }

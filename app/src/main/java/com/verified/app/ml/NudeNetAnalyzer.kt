@@ -10,6 +10,7 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.channels.FileChannel
+import androidx.core.graphics.createBitmap
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ class NudeNetAnalyzer(context: Context) {
     private val pixelScratch = IntArray(INPUT_SIZE * INPUT_SIZE)
 
     // Pre-allocated 320×320 bitmap + Canvas so preprocess() never allocates
-    private val scaledBitmap = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888)
+    private val scaledBitmap = createBitmap(INPUT_SIZE, INPUT_SIZE)
     private val scalingCanvas = Canvas(scaledBitmap)
     private val scalingPaint  = Paint(Paint.FILTER_BITMAP_FLAG)
     private val scalingDstRect = RectF(0f, 0f, INPUT_SIZE.toFloat(), INPUT_SIZE.toFloat())

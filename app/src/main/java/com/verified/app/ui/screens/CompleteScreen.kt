@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.verified.app.ui.theme.*
 import com.verified.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun CompleteScreen(
@@ -32,7 +33,7 @@ fun CompleteScreen(
     var cursorVisible by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(530)
+            delay(530.milliseconds)
             cursorVisible = !cursorVisible
         }
     }
@@ -44,10 +45,10 @@ fun CompleteScreen(
     var buttonVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(200);  line1Visible = true
-        delay(600);  line2Visible = true
-        delay(500);  line3Visible = true
-        delay(800);  buttonVisible = true
+        delay(200.milliseconds);  line1Visible = true
+        delay(600.milliseconds);  line2Visible = true
+        delay(500.milliseconds);  line3Visible = true
+        delay(800.milliseconds);  buttonVisible = true
     }
 
     // Pulse animation for the main ACCESS GRANTED text
