@@ -4,6 +4,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -13,6 +14,7 @@ import com.verified.app.camera.CameraManager
 import com.verified.app.ml.ChestFrameAnalyzer
 import com.verified.app.ml.NudeNetAnalyzer
 import com.verified.app.ui.components.ChestOverlay
+import com.verified.app.ui.components.ScanProgressBar
 import com.verified.app.viewmodel.DetectionState
 import com.verified.app.viewmodel.ScanViewModel
 import kotlinx.coroutines.delay
@@ -46,12 +48,9 @@ fun ChestScanScreen(
         cameraManager.startCamera(lifecycleOwner, previewView, analyzer)
     }
 
-    // Verification gate — NudeNet drives DETECTED; hold briefly then VERIFIED
+    // ScanProgressBar owns the DETECTED → VERIFIED transition via onComplete.
+    // This LaunchedEffect only handles post-VERIFIED navigation.
     LaunchedEffect(uiState.detectionState) {
-        if (uiState.detectionState == DetectionState.DETECTED) {
-            delay(800.milliseconds)
-            viewModel.onChestVerified()
-        }
         if (uiState.detectionState == DetectionState.VERIFIED) {
             delay(1800.milliseconds)
             cameraManager.shutdown()
@@ -78,6 +77,12 @@ fun ChestScanScreen(
             onToggleGhost     = viewModel::toggleGhostSkeleton,
             onToggleNudeNet   = viewModel::toggleNudeNetOverlay,
             modifier          = Modifier.fillMaxSize(),
+        )
+
+        ScanProgressBar(
+            active = uiState.detectionState == DetectionState.DETECTED,
+            onComplete = viewModel::onChestVerified,
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }
