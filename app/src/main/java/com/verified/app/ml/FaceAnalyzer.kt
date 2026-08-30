@@ -6,6 +6,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.verified.app.DetectionConfig
 
 class FaceAnalyzer(
     private val onConfidenceUpdate: (Int) -> Unit
@@ -14,7 +15,7 @@ class FaceAnalyzer(
     private val options = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
         .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-        .setMinFaceSize(0.15f)
+        .setMinFaceSize(DetectionConfig.FACE_MIN_SIZE)
         .build()
 
     private val detector = FaceDetection.getClient(options)
@@ -30,8 +31,7 @@ class FaceAnalyzer(
 
         detector.process(image)
             .addOnSuccessListener { faces ->
-                val confidence = computeFaceConfidence(faces)
-                onConfidenceUpdate(confidence)
+                onConfidenceUpdate(computeFaceConfidence(faces))
             }
             .addOnFailureListener {
                 onConfidenceUpdate(0)
@@ -42,33 +42,35 @@ class FaceAnalyzer(
     }
 
     /**
-     * Converts raw face detections to a 0–100 confidence score.
-     *
-     * Scoring:
-     *  - At least one face detected:          +50 pts
-     *  - Face is roughly centred (yaw < 25°): +20 pts
-     *  - Eyes open probability both > 0.7:    +30 pts
+     * Scoring (max 100):
+     *  - At least one face detected:                      +[FACE_BASE_SCORE]
+     *  - Face yaw within tight/medium/loose band:         +[FACE_YAW_SCORE_*]
+     *  - Both eyes open probability above threshold:      +[FACE_EYE_SCORE_BOTH]
+     *  - One eye open:                                    +[FACE_EYE_SCORE_ONE]
      */
     private fun computeFaceConfidence(faces: List<Face>): Int {
         if (faces.isEmpty()) return 0
 
         val face = faces.first()
-        var score = 50
+        var score = DetectionConfig.FACE_BASE_SCORE
 
-        // Reward facing forward
         val yaw = Math.abs(face.headEulerAngleY)
         score += when {
-            yaw < 10f -> 20
-            yaw < 20f -> 10
-            yaw < 35f -> 5
-            else -> 0
+            yaw < DetectionConfig.FACE_YAW_TIGHT_DEG  -> DetectionConfig.FACE_YAW_SCORE_TIGHT
+            yaw < DetectionConfig.FACE_YAW_MEDIUM_DEG -> DetectionConfig.FACE_YAW_SCORE_MEDIUM
+            yaw < DetectionConfig.FACE_YAW_LOOSE_DEG  -> DetectionConfig.FACE_YAW_SCORE_LOOSE
+            else                                       -> 0
         }
 
-        // Reward both eyes open
-        val leftEye = face.leftEyeOpenProbability ?: 0f
+        val leftEye  = face.leftEyeOpenProbability  ?: 0f
         val rightEye = face.rightEyeOpenProbability ?: 0f
-        if (leftEye > 0.7f && rightEye > 0.7f) score += 30
-        else if (leftEye > 0.5f || rightEye > 0.5f) score += 15
+        score += when {
+            leftEye  > DetectionConfig.FACE_EYE_OPEN_HIGH &&
+            rightEye > DetectionConfig.FACE_EYE_OPEN_HIGH -> DetectionConfig.FACE_EYE_SCORE_BOTH
+            leftEye  > DetectionConfig.FACE_EYE_OPEN_LOW  ||
+            rightEye > DetectionConfig.FACE_EYE_OPEN_LOW  -> DetectionConfig.FACE_EYE_SCORE_ONE
+            else -> 0
+        }
 
         return score.coerceIn(0, 100)
     }

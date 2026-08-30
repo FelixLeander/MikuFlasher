@@ -1,5 +1,6 @@
 package com.verified.app.ml
 
+import android.os.SystemClock
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -7,13 +8,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.PoseDetection
 import com.google.mlkit.vision.pose.PoseLandmark
 import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions
-import android.os.SystemClock
-
-// How often each model is allowed to run.
-// NudeNet is synchronous and heavy → lower rate.
-// Pose is async and lighter → higher rate.
-private const val NUDENET_INTERVAL_MS = 200L  // ~5 fps
-private const val POSE_INTERVAL_MS    = 100L  // ~10 fps
+import com.verified.app.DetectionConfig
 
 class ChestFrameAnalyzer(
     private val nudeNet: NudeNetAnalyzer,
@@ -32,33 +27,24 @@ class ChestFrameAnalyzer(
 
     @ExperimentalGetImage
     override fun analyze(imageProxy: ImageProxy) {
-        val now = SystemClock.elapsedRealtime()
-        val runNudeNet = now - lastNudeNetMs >= NUDENET_INTERVAL_MS
-        val runPose    = now - lastPoseMs    >= POSE_INTERVAL_MS
+        val now        = SystemClock.elapsedRealtime()
+        val runNudeNet = now - lastNudeNetMs >= DetectionConfig.NUDENET_INTERVAL_MS
+        val runPose    = now - lastPoseMs    >= DetectionConfig.POSE_INTERVAL_MS
 
-        // Nothing is due this frame — drop it immediately so the preview stays smooth
         if (!runNudeNet && !runPose) {
             imageProxy.close()
             return
         }
 
-        // ── NudeNet — synchronous on the bitmap ──────────────────────────────
         if (runNudeNet) {
             lastNudeNetMs = now
-            val bitmap = imageProxy.toBitmap()
-            onNudeNetResult(nudeNet.analyze(bitmap))
-            // bitmap is short-lived; GC will collect it; no explicit recycle needed
-            // because imageProxy.toBitmap() returns a copy
+            onNudeNetResult(nudeNet.analyze(imageProxy.toBitmap()))
         }
 
-        // ── Pose — async; proxy must stay open until the Task completes ──────
         if (runPose) {
             lastPoseMs = now
             val mediaImage = imageProxy.image
-            if (mediaImage == null) {
-                imageProxy.close()
-                return
-            }
+            if (mediaImage == null) { imageProxy.close(); return }
             val rotation = imageProxy.imageInfo.rotationDegrees
             val imgW = imageProxy.width
             val imgH = imageProxy.height
@@ -72,13 +58,9 @@ class ChestFrameAnalyzer(
                     .addOnFailureListener {
                         onPoseResult(PoseDetectionResult(0, null, imgW, imgH, rotation))
                     }
-                    .addOnCompleteListener {
-                        // Always close here — Pose was the last thing holding the proxy
-                        imageProxy.close()
-                    }
+                    .addOnCompleteListener { imageProxy.close() }
             }
         } else {
-            // Only NudeNet ran this frame; Pose is not using the proxy
             imageProxy.close()
         }
     }
@@ -87,63 +69,56 @@ class ChestFrameAnalyzer(
         pose: com.google.mlkit.vision.pose.Pose,
         imageHeight: Float,
     ): Int {
-        val ls    = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
-        val rs    = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
-        val lh    = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
-        val rh    = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)
-        val nose  = pose.getPoseLandmark(PoseLandmark.NOSE)
-        val lw    = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST)
-        val rw    = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST)
+        val ls   = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
+        val rs   = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
+        val lh   = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
+        val rh   = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)
+        val nose = pose.getPoseLandmark(PoseLandmark.NOSE)
+        val lw   = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST)
+        val rw   = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST)
 
-        val thr = 0.55f
+        val thr = DetectionConfig.POSE_LANDMARK_THRESHOLD
         var score = 0
 
         val lsOk = (ls?.inFrameLikelihood ?: 0f) > thr
         val rsOk = (rs?.inFrameLikelihood ?: 0f) > thr
-        if (lsOk && rsOk) score += 40 else if (lsOk || rsOk) score += 15
+        if (lsOk && rsOk) score += DetectionConfig.POSE_SHOULDER_SCORE_BOTH
+        else if (lsOk || rsOk) score += DetectionConfig.POSE_SHOULDER_SCORE_ONE
 
         val lhOk = (lh?.inFrameLikelihood ?: 0f) > thr
         val rhOk = (rh?.inFrameLikelihood ?: 0f) > thr
-        if (lhOk && rhOk) score += 20 else if (lhOk || rhOk) score += 8
+        if (lhOk && rhOk) score += DetectionConfig.POSE_HIP_SCORE_BOTH
+        else if (lhOk || rhOk) score += DetectionConfig.POSE_HIP_SCORE_ONE
 
         if (lsOk && rsOk) {
             val avgY = (ls!!.position.y + rs!!.position.y) / 2f
-            if ((avgY / imageHeight) in 0.25f..0.75f) score += 20
+            if ((avgY / imageHeight) in DetectionConfig.POSE_SHOULDER_Y_MIN..DetectionConfig.POSE_SHOULDER_Y_MAX)
+                score += DetectionConfig.POSE_SHOULDER_Y_SCORE
         }
 
         val noseLikelihood = nose?.inFrameLikelihood ?: 0f
         score += when {
-            noseLikelihood < 0.4f  -> 20
-            noseLikelihood < 0.65f -> 10
-            else                   -> 0
+            noseLikelihood < DetectionConfig.POSE_NOSE_LOW_THRESHOLD  -> DetectionConfig.POSE_NOSE_SCORE_ABSENT
+            noseLikelihood < DetectionConfig.POSE_NOSE_HIGH_THRESHOLD -> DetectionConfig.POSE_NOSE_SCORE_PARTIAL
+            else -> 0
         }
 
-        // Wrists slightly below shoulders — normalized offset so it's scale-invariant.
-        // Positive = wrist is lower in frame than shoulder (y increases downward).
-        // Window [0.04, 0.30] covers "slightly raised / near chest" without
-        // capturing arms fully hanging at the sides (> 0.30) or raised above (< 0.04).
         val leftWristOk  = wristSlightlyBelowShoulder(ls, lw, imageHeight)
         val rightWristOk = wristSlightlyBelowShoulder(rs, rw, imageHeight)
-        if (leftWristOk && rightWristOk) score += 20
-        else if (leftWristOk || rightWristOk) score += 8
+        if (leftWristOk && rightWristOk) score += DetectionConfig.WRIST_SCORE_BOTH
+        else if (leftWristOk || rightWristOk) score += DetectionConfig.WRIST_SCORE_ONE
 
         return score.coerceIn(0, 100)
     }
 
-    /**
-     * Returns true when [wrist] is between [minBelow] and [maxBelow] of [imageHeight]
-     * below [shoulder] — i.e. "slightly below", not raised above and not hanging far down.
-     */
     private fun wristSlightlyBelowShoulder(
-        shoulder: PoseLandmark?,
-        wrist: PoseLandmark?,
+        shoulder: com.google.mlkit.vision.pose.PoseLandmark?,
+        wrist: com.google.mlkit.vision.pose.PoseLandmark?,
         imageHeight: Float,
-        minBelow: Float = 0.04f,
-        maxBelow: Float = 0.30f,
     ): Boolean {
         if (shoulder == null || wrist == null) return false
-        if (wrist.inFrameLikelihood < 0.5f) return false
+        if (wrist.inFrameLikelihood < DetectionConfig.WRIST_LANDMARK_THRESHOLD) return false
         val normalizedOffset = (wrist.position.y - shoulder.position.y) / imageHeight
-        return normalizedOffset in minBelow..maxBelow
+        return normalizedOffset in DetectionConfig.WRIST_BELOW_MIN..DetectionConfig.WRIST_BELOW_MAX
     }
 }

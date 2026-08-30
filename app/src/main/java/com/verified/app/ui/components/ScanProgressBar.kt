@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.verified.app.DetectionConfig
 
 /**
  * A thin progress bar that fills linearly over [durationMs] while [active] is true.
@@ -27,7 +28,7 @@ import androidx.compose.ui.unit.dp
 fun ScanProgressBar(
     active: Boolean,
     modifier: Modifier = Modifier,
-    durationMs: Int = 800,
+    durationMs: Int = DetectionConfig.SCAN_HOLD_MS,
     barHeight: Dp = 2.dp,
     color: Color = Color.White.copy(alpha = 0.45f),
     trackColor: Color = Color.White.copy(alpha = 0.08f),

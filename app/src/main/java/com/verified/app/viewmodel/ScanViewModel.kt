@@ -2,6 +2,7 @@ package com.verified.app.viewmodel
 
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
+import com.verified.app.DetectionConfig
 import com.verified.app.ml.BreastState
 import com.verified.app.ml.NudeNetResult
 import com.verified.app.ml.PoseDetectionResult
@@ -45,7 +46,7 @@ class ScanViewModel : ViewModel() {
         if (s.stage != ScanStage.FACE || s.detectionState == DetectionState.VERIFIED) return
         _uiState.value = s.copy(
             confidencePercent = confidence.coerceIn(0, 100),
-            detectionState = if (confidence >= 80) DetectionState.DETECTED
+            detectionState = if (confidence >= DetectionConfig.FACE_DETECTED_THRESHOLD) DetectionState.DETECTED
                              else DetectionState.SCANNING,
         )
     }

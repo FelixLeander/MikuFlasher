@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import org.tensorflow.lite.Interpreter
+import com.verified.app.DetectionConfig
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -18,8 +19,8 @@ private const val MODEL_FILE        = "nudeNet_320n_w8a32.tflite"
 private const val INPUT_SIZE        = 320
 private const val NUM_ANCHORS       = 2100
 private const val NUM_CLASSES       = 18
-private const val CONF_THRESHOLD    = 0.25f
-private const val NMS_IOU_THRESHOLD = 0.45f
+private const val CONF_THRESHOLD    = DetectionConfig.NUDENET_CONF_THRESHOLD
+private const val NMS_IOU_THRESHOLD = DetectionConfig.NUDENET_NMS_IOU_THRESHOLD
 
 // Class index → human-readable name, in the order the model was trained
 val NUDENET_CLASS_NAMES = arrayOf(
@@ -74,7 +75,7 @@ class NudeNetAnalyzer(context: Context) {
 
     private val interpreter = Interpreter(
         loadModelBuffer(context),
-        Interpreter.Options().apply { numThreads = 2 },
+        Interpreter.Options().apply { numThreads = DetectionConfig.NUDENET_THREADS },
     )
 
     // Reusable buffers — not thread-safe; call only from a single analysis thread
