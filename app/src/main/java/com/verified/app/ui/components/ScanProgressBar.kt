@@ -29,9 +29,9 @@ fun ScanProgressBar(
     active: Boolean,
     modifier: Modifier = Modifier,
     durationMs: Int = DetectionConfig.SCAN_HOLD_MS,
-    barHeight: Dp = 2.dp,
-    color: Color = Color.White.copy(alpha = 0.45f),
-    trackColor: Color = Color.White.copy(alpha = 0.08f),
+    barHeight: Dp = 20.dp,
+    color: Color = Color.Blue.copy(alpha = 0.45f),
+    trackColor: Color = Color.Red.copy(alpha = 0.08f),
     onComplete: () -> Unit = {},
 ) {
     val progress = remember { Animatable(0f) }

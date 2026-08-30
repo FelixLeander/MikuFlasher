@@ -2,21 +2,27 @@ package com.verified.app.ui.screens
 
 import android.app.Activity
 import android.graphics.Bitmap
-import android.graphics.PixelCopy
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
+import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.verified.app.camera.CameraManager
@@ -110,7 +116,7 @@ fun ChestScanScreen(
  */
 private suspend fun captureView(window: Window, view: View): Bitmap =
     suspendCancellableCoroutine { cont ->
-        val bitmap   = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        val bitmap   = createBitmap(view.width, view.height)
         val location = IntArray(2).also { view.getLocationInWindow(it) }
         val srcRect  = Rect(
             location[0],
@@ -118,7 +124,7 @@ private suspend fun captureView(window: Window, view: View): Bitmap =
             location[0] + view.width,
             location[1] + view.height,
         )
-        PixelCopy.request(window, srcRect, bitmap, { result ->
+        PixelCopy.request(window, srcRect, bitmap, { _ ->
             // Resume regardless — on failure the bitmap will just be black,
             // which is still a valid (if empty) result to show on ResultScreen.
             cont.resume(bitmap)

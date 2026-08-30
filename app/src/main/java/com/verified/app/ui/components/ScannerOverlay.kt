@@ -1,11 +1,19 @@
 package com.verified.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,10 +74,10 @@ fun ChestOverlay(
     Box(modifier = modifier.fillMaxSize()) {
         // Derive outline tint from NudeNet breast detection state
         val outlineTint = when (nudeNetResult?.breastState) {
-            BreastState.COVERED  -> Color(0xFF44DD44)   // green
-            BreastState.EXPOSED  -> Color(0xFFFF4444)   // red
+            BreastState.COVERED  -> Color.Blue   // red
             BreastState.BOTH     -> Color(0xFFFFD43B)   // amber
-            else                 -> Color.Unspecified   // original drawable colour
+            BreastState.EXPOSED  -> Color(0xFF44DD44)   // green
+            else                 -> Color.Red   // original drawable colour
         }
 
         // Frosted stencil

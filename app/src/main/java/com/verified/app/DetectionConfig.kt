@@ -14,14 +14,14 @@ package com.verified.app
 object DetectionConfig {
 
     // ── Frame throttling ──────────────────────────────────────────────────────
-    /** Minimum ms between NudeNet inference calls (~5 fps). */
-    const val NUDENET_INTERVAL_MS: Long = 200L
-    /** Minimum ms between Pose inference calls (~10 fps). */
-    const val POSE_INTERVAL_MS: Long    = 100L
+    /** Minimum ms between NudeNet inference calls (200L ~ 5 fps). */
+    const val NUDENET_INTERVAL_MS: Long = 500L
+    /** Minimum ms between Pose inference calls (100L ~ 10 fps). */
+    const val POSE_INTERVAL_MS: Long    = 200L
 
     // ── NudeNet inference ─────────────────────────────────────────────────────
     /** Class score below this is discarded before NMS. */
-    const val NUDENET_CONF_THRESHOLD: Float    = 0.25f
+    const val NUDENET_CONF_THRESHOLD: Float    = 0.3f
     /** IoU above this suppresses a lower-confidence duplicate box. */
     const val NUDENET_NMS_IOU_THRESHOLD: Float = 0.45f
     /** TFLite inference thread count. */
@@ -87,5 +87,5 @@ object DetectionConfig {
      * How long (ms) detection must be uninterrupted before the stage is verified.
      * This is the duration the [ScanProgressBar] fills over.
      */
-    const val SCAN_HOLD_MS: Int = 800
+    const val SCAN_HOLD_MS: Int = 10_000
 }
