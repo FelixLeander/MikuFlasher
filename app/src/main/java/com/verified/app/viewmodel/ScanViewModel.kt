@@ -1,5 +1,6 @@
 package com.verified.app.viewmodel
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import com.verified.app.ml.BreastState
 import com.verified.app.ml.NudeNetResult
@@ -28,6 +29,14 @@ class ScanViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+
+    /** Stored outside StateFlow — large object, no recomposition needed on set. */
+    var capturedBitmap: Bitmap? = null
+        private set
+
+    fun setCapturedBitmap(bitmap: Bitmap) {
+        capturedBitmap = bitmap
+    }
 
     // ── Stage 1: face ─────────────────────────────────────────────────────────
 
@@ -110,6 +119,8 @@ class ScanViewModel : ViewModel() {
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     fun reset() {
+        capturedBitmap?.recycle()
+        capturedBitmap = null
         _uiState.value = ScanUiState()
     }
 }
